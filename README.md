@@ -23,6 +23,11 @@ A Flask-based web application for managing student attendance, exams, and quizze
    cd Sley
    ```
 
+   #### Extract the zip file and then navigate to the directory
+   ```
+   cd tracker
+   ```
+
 2. Create a virtual environment:
    ```
    python -m venv venv
