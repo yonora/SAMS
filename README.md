@@ -1,0 +1,124 @@
+# Sley - Student Management System
+
+A Flask-based web application for managing student attendance, exams, and quizzes.
+
+## Features
+
+- Track student attendance
+- Manage exam records
+- Record quiz results
+- Simple and intuitive interface
+
+## Prerequisites
+
+- Python 3.7+
+- MySQL Database
+- Git (for cloning the repository)
+
+## Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/Sley.git
+   cd Sley
+   ```
+
+2. Create a virtual environment:
+   ```
+   python -m venv venv
+   ```
+
+3. Activate the virtual environment:
+   - Windows:
+     ```
+     venv\Scripts\activate
+     ```
+   - macOS/Linux:
+     ```
+     source venv/bin/activate
+     ```
+
+4. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+## Database Setup
+
+1. Create a MySQL database for the application:
+   ```sql
+   CREATE DATABASE sley_db;
+   ```
+
+2. Use the following SQL to create the required tables:
+   ```sql
+   USE sley_db;
+   
+   CREATE TABLE attendance (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     student_name VARCHAR(255) NOT NULL,
+     date DATE NOT NULL,
+     status VARCHAR(50) NOT NULL
+   );
+   
+   CREATE TABLE exam (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     student_name VARCHAR(255) NOT NULL,
+     exam_date DATE NOT NULL,
+     score FLOAT NOT NULL
+   );
+   
+   CREATE TABLE quiz (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     student_name VARCHAR(255) NOT NULL,
+     quiz_date DATE NOT NULL,
+     score FLOAT NOT NULL
+   );
+   ```
+
+## Environment Configuration
+
+1. Create a `.env` file in the project root directory:
+   ```
+   DB_HOST=localhost
+   DB_USER=your_database_username
+   DB_PASSWORD=your_database_password
+   DB_NAME=sley_db
+   SECRET_KEY=your_secret_key_here
+   ```
+
+   Replace the values with your actual database credentials and create a secure random string for SECRET_KEY.
+
+## Running the Application
+
+1. Start the application:
+   ```
+   python app.py
+   ```
+
+2. Open your web browser and navigate to:
+   ```
+   http://127.0.0.1:5000/
+   ```
+
+## Project Structure
+
+- `app.py` - The main Flask application
+- `templates/` - HTML templates
+  - `index.html` - Home page
+  - `attendance.html` - Attendance management
+  - `exam.html` - Exam records
+  - `quiz.html` - Quiz results
+- `static/` - Static files (CSS, JS, images)
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
