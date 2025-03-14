@@ -114,7 +114,9 @@ A Flask-based web application for managing student attendance, exams, and quizze
   - `attendance.html` - Attendance management
   - `exam.html` - Exam records
   - `quiz.html` - Quiz results
-- `static/` - Static files (CSS, JS, images)
+  - `base.html` - Base templte
+- `static/js` - Static files (CSS, JS, images)
+  - `alert.js` - javascript program
 
 ## Contributing
 
