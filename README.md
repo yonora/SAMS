@@ -23,7 +23,7 @@ A Flask-based web application for managing student attendance, exams, and quizze
    cd Sley
    ```
 
-   #### Or extract the zip file and then navigate to the directory
+   #### After cloning the repo, extract the zip file and then navigate to the directory
    ```
    cd tracker
    ```
