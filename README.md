@@ -23,7 +23,7 @@ A Flask-based web application for managing student attendance, exams, and quizze
    cd Sley
    ```
 
-   #### Extract the zip file and then navigate to the directory
+   #### Or extract the zip file and then navigate to the directory
    ```
    cd tracker
    ```
@@ -46,6 +46,54 @@ A Flask-based web application for managing student attendance, exams, and quizze
 4. Install dependencies:
    ```
    pip install -r requirements.txt
+   ```
+
+## MySQL Installation and Setup
+
+### Windows
+1. Download and install MySQL from the [official website](https://dev.mysql.com/downloads/installer/)
+2. During installation, set a root password and remember it
+3. Launch MySQL Command Line Client:
+   ```
+   mysql -u root -p
+   ```
+4. Enter your password when prompted
+
+### macOS
+1. Install MySQL using Homebrew:
+   ```
+   brew install mysql
+   ```
+2. Start MySQL service:
+   ```
+   brew services start mysql
+   ```
+3. Secure your MySQL installation:
+   ```
+   mysql_secure_installation
+   ```
+4. Connect to MySQL:
+   ```
+   mysql -u root -p
+   ```
+
+### Linux (Ubuntu/Debian)
+1. Install MySQL:
+   ```
+   sudo apt update
+   sudo apt install mysql-server
+   ```
+2. Secure your MySQL installation:
+   ```
+   sudo mysql_secure_installation
+   ```
+3. Connect to MySQL:
+   ```
+   sudo mysql
+   ```
+   or if you set a password:
+   ```
+   mysql -u root -p
    ```
 
 ## Database Setup
@@ -114,9 +162,9 @@ A Flask-based web application for managing student attendance, exams, and quizze
   - `attendance.html` - Attendance management
   - `exam.html` - Exam records
   - `quiz.html` - Quiz results
-  - `base.html` - Base templte
-- `static/js` - Static files (CSS, JS, images)
-  - `alert.js` - javascript program
+  - `base.html` - Base template for consistent layout
+- `static/js` - Static files
+  - `alert.js` - JavaScript for displaying alerts and notifications
 
 ## Contributing
 
