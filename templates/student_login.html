@@ -1,0 +1,23 @@
+{% extends 'guest.html' %}
+
+{% block title %}Student Login{% endblock %}
+
+{% block content %}
+<div class="card p-5 w-50 m-auto">
+    <form method="POST" action="{{url_for('student_login') }}">
+        <div class="mb-3">
+            <label for="student_id" class="col-form-label">Student ID:</label>
+            <div>
+                <input type="text" class="form-control" id="student_id" name="student_id" required>
+            </div>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary w-100">Submit</button>
+        </div>
+        <div class="mb-3 text-center">
+            <a href="{{ url_for('login') }}">Admin?</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'guest.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="card p-5 w-50 m-auto">
+    <h1 class="text-center">Welcome back!</h1>
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="mb-3">
+            <label for="email" class="col-form-label">Email:</label>
+            <div>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="col-form-label">Password:</label>
+            <div>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </div>
+        <div class="mb-3 text-center">
+            <a href="{{url_for('student_login') }}">Student?</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

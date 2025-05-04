@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('add_questionBank') }}">
+    <div class="card" style="width: 100%;">
+        <div class="card-header text-bold text-center">
+            Add Assessment
+        </div>
+        <div class="card-body">
+            <h5 class="card-title text-bold">Assessment Details</h5>
+            <div class="mb-3">
+                <label for="assessment_type" class="form-label">Assessment Type</label>
+                <select class="form-control" id="assessment_type" name="assessment_type" onchange="addChoices(event)">
+                    <option value="Quiz">Quiz</option>
+                    <option value="Exam">Exam</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title">
+            </div>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title text-bold">Assessment Items</h5>
+            <div class="item-container">
+                <h5 class="card-subtitle text-bold mt-2">Item  #1</h5>
+                <div class="item">
+                    <div class="mb-3">
+                        <label for="item_type_1" class="form-label">Type</label>
+                        <select class="form-control type" id="item_type_1" name="item_type_1">
+                            <option value="Identification">Identification</option>
+                            <option value="Multiple Choice">Multiple Choice</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="question_1" class="form-label">Question</label>
+                        <textarea class="form-control" id="question_1" name="question_1"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="answer_1" class="form-label">Answer</label>
+                        <input type="text" class="form-control" id="answer_1" name="answer_1">
+                    </div>
+                    <div class="mb-3 hidden choices_container_1">
+                        <label for="choices_1" class="form-label">Choices</label>
+                        <input type="text" class="form-control" id="choices_1" name="choices_1">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-success" onclick="addItem()">Add Item</button>
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function addItem()
+    {
+        const container = document.querySelector('.item-container');
+        const items = document.querySelectorAll('.item');
+        const index = items.length + 1;
+        container.insertAdjacentHTML("beforeend", `
+            <h5 class="card-subtitle text-bold mt-2">Item  #${index}</h5>
+            <div class="item" >
+                <div class="mb-3">
+                    <label for="item_type_${index}" class="form-label">Type</label>
+                    <select class="form-control type" id="item_type_${index}" name="item_type_${index}">
+                        <option value="Identification">Identification</option>
+                        <option value="Multiple Choice">Multiple Choice</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="question_${index}" class="form-label">Question</label>
+                    <textarea class="form-control" id="question_${index}" name="question_${index}"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="answer_${index}" class="form-label">Answer</label>
+                    <input type="text" class="form-control" id="answer_${index}" name="answer_${index}">
+                </div>
+                <div class="mb-3 hidden choices_container_${index}">
+                    <label for="choices_${index}" class="form-label">Choices</label>
+                    <input type="text" class="form-control" id="choices_${index}" name="choices_${index}">
+                </div>
+            </div>
+            `);
+    }
+
+    document.addEventListener('change', function(event) {
+        if (event.target.classList.contains('type')) {
+            const value = event.target.value;
+            const id = event.target.id;
+            const index = id.charAt(id.length - 1);
+            const choices = document.querySelector('.choices_container_'+ index);
+            if(value === 'Multiple Choice'){
+                choices.classList.remove('hidden');
+            } else {
+                if(!choices.classList.contains('hidden')){
+                    choices.classList.add('hidden');
+                }
+            }
+        }
+    });
+
+</script>
+{% endblock %}

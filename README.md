@@ -106,12 +106,27 @@ A Flask-based web application for managing student attendance, exams, and quizze
 2. Use the following SQL to create the required tables:
    ```sql
    USE sley_db;
+
+   CREATE TABLE users (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     email VARCHAR(255) NOT NULL,
+     password VARCHAR(255) NOT NULL,
+     role VARCHAR(20) NOT NULL
+   );
+
+   CREATE TABLE student (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     student_id INT(6) NOT NULL,
+     student_name VARCHAR(255) NOT NULL,
+     year_section VARCHAR(255) NOT NULL
+   );
    
    CREATE TABLE attendance (
      id INT AUTO_INCREMENT PRIMARY KEY,
-     student_name VARCHAR(255) NOT NULL,
      date DATE NOT NULL,
-     status VARCHAR(50) NOT NULL
+     status VARCHAR(50) NOT NULL,
+     student_id INT NOT NULL,
+     FOREIGN KEY (student_id) REFERENCES student(id)
    );
    
    CREATE TABLE exam (
@@ -127,6 +142,51 @@ A Flask-based web application for managing student attendance, exams, and quizze
      quiz_date DATE NOT NULL,
      score FLOAT NOT NULL
    );
+
+   CREATE TABLE assessment(
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      type VARCHAR(20) NOT NULL,
+      title VARCHAR(255) NOT NULL
+   );
+
+   CREATE TABLE assessment_item (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      type VARCHAR(50) NOT NULL,
+      question TEXT NOT NULL,
+      answer VARCHAR(255) NOT NULL,
+      assessment_id INT NOT NULL,
+      FOREIGN KEY (assessment_id) REFERENCES assessment(id)
+   );
+
+   CREATE TABLE assessment_choices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      choice VARCHAR(50) NOT NULL,
+      item_id INT NOT NULL,
+      FOREIGN KEY (item_id) REFERENCES assessment_item(id)
+   );
+
+   CREATE TABLE assessment_response (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      answer VARCHAR(255) NOT NULL,
+      item_id INT NOT NULL,
+      FOREIGN KEY(item_id) REFERENCES assessment_item(id)
+      student_id INT NOT NULL,
+      FOREIGN KEY (student_id) REFERENCES student(id),
+      assessment_id INT NOT NULL,
+      FOREIGN KEY(assessment_id) REFERENCES assessment(id)
+      
+   );
+
+   CREATE TABLE assessment_result (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      score INT NOT NULL,
+      student_id INT NOT NULL,
+      FOREIGN KEY (student_id) REFERENCES student(id),
+      assessment_id INT NOT NULL,
+      FOREIGN KEY (assessment_id) REFERENCES assessment(id),
+      date DATE NOT NULL
+   );
+   
    ```
 
 ## Environment Configuration

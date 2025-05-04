@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance{% endblock %}
+
+{% block content %}
+<div class="card" style="width: 100%;">
+    <!-- Admin view -->
+  {% if current_user.is_authenticated %}
+  <div class="card-body">
+    <div class="d-flex flex-row justify-content-between">
+        <h5 class="card-title text-bold">Attendance</h5>
+        <a href="{{ url_for('generate_attReport') }}" class="btn btn-primary">Generate Report</a>
+    </div>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in attendance %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] }}</td>
+                <td class="text-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editAttendanceModal" data-id="{{ row[0] }}" data-student_id="{{ row[4] }}" data-date="{{ row[2] }}" data-status="{{ row[3] }}">Edit</button>
+                    <button onclick="confirmDelete('{{ url_for('delete_attendance', id=row[0]) }}')" class="btn btn-danger">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAttendanceModal">Add Attendance</button>
+  </div>
+  <!-- Student View -->
+  {% else %}
+  <div class="card-body">
+    <div class="d-flex flex-row justify-content-between">
+        <h5 class="card-title text-bold">Attendance Overview</h5>
+    </div>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in attendance %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Attendance Modal -->
+<div class="modal fade" id="addAttendanceModal" tabindex="-1" aria-labelledby="addAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_attendance') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAttendanceModalLabel">Add Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <select name="student_id" id="student_id"  class="form-control" required>
+                            {% for stud in student %}
+                            <option value="{{stud[0]}}">{{ stud[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" name="status" required>
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Attendance Modal -->
+<div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-labelledby="editAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="editAttendanceForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAttendanceModalLabel">Edit Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_student_id" class="form-label">Student ID</label>
+                        <select name="student_id" id="edit_student_id"  class="form-control" required>
+                            {% for stud in student %}
+                            <option value="{{stud[0]}}" >
+                                {{ stud[1] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="edit_date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Status</label>
+                        <select class="form-control" id="edit_status" name="status" required>
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var editAttendanceModal = document.getElementById('editAttendanceModal');
+    editAttendanceModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var student_id = button.getAttribute('data-student_id');
+        console.log(student_id);
+        var date = button.getAttribute('data-date');
+        var status = button.getAttribute('data-status');
+        var modalTitle = editAttendanceModal.querySelector('.modal-title');
+        var form = document.getElementById('editAttendanceForm');
+        form.action = "/attendance/edit/" + id;
+
+        var studentNameInput = editAttendanceModal.querySelector('#edit_student_id');
+        var dateInput = editAttendanceModal.querySelector('#edit_date');
+        var statusInput = editAttendanceModal.querySelector('#edit_status');
+
+        studentNameInput.value = student_id;
+        dateInput.value = date;
+        statusInput.value = status;
+    });
+
+</script>
+{% endblock %}

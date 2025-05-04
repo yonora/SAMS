@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Responses{% endblock %}
+
+{% block content %}
+<div class="card" style="width: 100%;">
+  <div class="card-body">
+    <h5 class="card-title text-bold">Responses</h5>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                <td>{{ row['student_name'] }}</td>
+                <td>{{ row['status'] }}</td>
+                <td class="text-end">
+                    <a role="button" class="btn btn-success {% if row['status'] == 'Checked' %}disabled{% endif %}" href="{{ url_for('view_assessment', assessment_id=row['assessment_id'], student_id=row['student_id']) }} ">Check Answers</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelector('.disabled').addEventListener('click', function(event) {
+        event.preventDefault();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+<div class="card" style="width: 100%;">
+  <div class="card-body">
+    <h5 class="card-title text-bold">Student Information</h5>
+      <table class="table table-striped">
+          <thead>
+              <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Year and Section</th>
+                  <th class="text-end">Actions</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for row in data %}
+              <tr>
+                  <td>{{ row[1] }}</td>
+                  <td>{{ row[2] }}</td>
+                  <td>{{ row[3] }}</td>
+                  <td class="text-end">
+                      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editStudentModal" data-id="{{ row[0] }}" data-student-id="{{ row[1] }}" data-student-name="{{ row[2] }}" data-year-section="{{ row[3] }}">Edit</button>
+                      <button onclick="confirmDelete('{{ url_for('delete_student', id=row[0]) }}')" class="btn btn-danger">Delete</button>
+                  </td>
+              </tr>
+              {% endfor %}
+          </tbody>
+      </table>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addStudentModal">Add Student</button>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_student') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentModalLabel">Add Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="student_id" name="student_id" placeholder="e.g. 123456" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="student_name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="student_name" name="student_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year_section" class="form-label">Year and Section</label>
+                        <input type="text" class="form-control" id="year_section" name="year_section" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="editStudentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentModalLabel">Edit Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="edit_student_id" name="student_id" placeholder="e.g. 123456" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_student_name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="edit_student_name" name="student_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_year_section" class="form-label">Year and Section</label>
+                        <input type="text" class="form-control" id="edit_year_section" name="year_section" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var editStudentModal = document.getElementById('editStudentModal');
+    editStudentModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var student_id = button.getAttribute('data-student-id');
+        var student_name = button.getAttribute('data-student-name');
+        var year_section = button.getAttribute('data-year-section');
+
+        var modalTitle = editStudentModal.querySelector('.modal-title');
+        var form = document.getElementById('editStudentForm');
+        form.action = "/students/edit/" + id;
+
+        var studentidInput = editStudentModal.querySelector('#edit_student_id');
+        var studentNameInput = editStudentModal.querySelector('#edit_student_name');
+        var yearAndSectionInput = editStudentModal.querySelector('#edit_year_section');
+
+        studentidInput.value = student_id;
+        studentNameInput.value = student_name;
+        yearAndSectionInput.value = year_section;
+    });
+</script>
+{% endblock %}
