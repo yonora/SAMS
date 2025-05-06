@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, jsonify
 from flask_login import LoginManager, UserMixin, logout_user, login_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from dotenv import load_dotenv
 import mysql.connector
 import os
@@ -278,13 +282,55 @@ def delete_attendance(id):
 # Generate Attendance Report
 @app.route('/attendance/report') 
 def generate_attReport():
-    pass
+    db = get_db_connection()
+    query = "SELECT * FROM attendance JOIN student ON student.id = attendance.student_id"
+    raw_data = pd.read_sql(query, db)
+
+    df = pd.DataFrame(raw_data)
+    # data = df.groupby(['date', 'year_section'])['status'].value_counts().unstack(fill_value=0).apply(list).reset_index()
+    # Group by date, year_section, and status; collect student names
+    data = df.groupby(['date', 'year_section', 'status'])['student_name'].apply(list).unstack(fill_value=[]).reset_index()
+
+    # Optional: Rename columns
+    data.columns.name = None
+    data.columns = ['Date', 'Year and Section', 'Absent Students', 'Present Students']
+
+    # Convert student name lists to comma-separated strings
+    data['Absent Students'] = data['Absent Students'].apply(lambda names: ', '.join(names))
+    data['Present Students'] = data['Present Students'].apply(lambda names: ', '.join(names))
+
+    pdf_file = "attendance_report.pdf"
+    doc = SimpleDocTemplate(pdf_file, pagesize=A4)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title = Paragraph("Attendance Report", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+    data.columns =  ['Date', 'Year and Section',  'Present Students', 'Absent Students']
+    table_data = [data.columns.tolist()] + data.values.tolist()
+
+    table = Table(table_data, colWidths=[doc.pagesize[0] * 0.9 / len(table_data[0])] * len(table_data[0]))
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+    return send_file(pdf_file, as_attachment=True)
     
 # Assessment Management
 # Displaying assessment list
 @app.route('/assessment')
 def assessment():
     disable = {}
+    score = []
     db = get_db_connection()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM assessment")
@@ -297,13 +343,21 @@ def assessment():
         student = session.get('student_id')
         cursor.execute("SELECT id, student_id FROM student WHERE student_id=%s",(student,))
         student_data = cursor.fetchone()
-        for row in data: 
+
+        # Control button visibility
+        for i, row in enumerate(data): 
             assessment_id = row[0]
             cursor.execute(
                 "SELECT COUNT(*) FROM assessment_response WHERE assessment_id=%s AND student_id=%s",
                 (row[0], student_data[0]))
             response = cursor.fetchone()
             disable[assessment_id] = response[0] > 0
+            cursor.execute("SELECT * FROM assessment_result WHERE student_id=%s and assessment_id=%s", (student_data[0], row[0]))
+            result = cursor.fetchone()
+            score = result[1] if result else 'No result yet'
+            row = list(row) 
+            row.append(score)
+            data[i] = tuple(row)
     cursor.close()
     db.close()
     return render_template('assessment.html', data=data, disable=disable, student=student_data)
@@ -437,7 +491,7 @@ def take_assessment(id):
     data = cursor.fetchone()
     cursor.close()
     db.close()
-    return render_template('take_assessment.html', assessment=data, items=items)
+    return render_template('assessment_module.html', assessment=data, items=items)
 
 # Display assessment results
 @app.route('/assessment/<int:assessment_id>/results/<int:student_id>')
@@ -466,7 +520,7 @@ def view_assessment(assessment_id, student_id):
 
     cursor.close()
     db.close()
-    return render_template('view_assessment.html', assessment=assessment, items=items, student=student, response=response)
+    return render_template('assessment_results.html', assessment=assessment, items=items, student=student, response=response)
 
 # Manual checking of answers
 @app.route('/item/<int:id>/check', methods=['POST'])
@@ -500,22 +554,26 @@ def checkAnswer(id):
 def view_response(id):
     db = get_db_connection()
     cursor = db.cursor()
-
+    status_list = []
     # Group response
-    response_query = "SELECT assessment_response.id, assessment_response.is_correct, assessment_response.assessment_id, assessment_response.student_id, student.student_name  FROM assessment_response JOIN student ON student.id = assessment_response.student_id WHERE assessment_id = %s"
-    df = pd.read_sql(response_query, db, params=(id,))
-    grouped = df.groupby(['assessment_id','student_id', 'student_name'])['is_correct']\
-                .apply(list).reset_index()
+    response_query = "SELECT assessment_response.id, assessment_response.assessment_id, assessment_response.student_id, student.student_name  FROM assessment_response JOIN student ON student.id = assessment_response.student_id WHERE assessment_id = %s"
+    response = pd.read_sql(response_query, db, params=(id,))
+    grouped = response.groupby(['assessment_id','student_id', 'student_name']).apply(list).reset_index()
+    for index, row in grouped.iterrows():
+        result_query = "SELECT COUNT(*) as results FROM assessment_result WHERE assessment_id=%s AND student_id=%s"
+        results = pd.read_sql(result_query, db, params=(row['assessment_id'], row['student_id']))
+        status = "Recorded" if results['results'].iloc[0] > 0 else "Not Recorded"
+        status_list.append(status)
 
-    # Add status to track response
-    grouped['status'] = grouped['is_correct'].apply(
-        lambda x: 'Unchecked' if any(pd.isna(i) for i in x) else 'Checked'
-    )
+    # Add the status list to the grouped DataFrame
+    grouped['status'] = status_list
     data = grouped.to_dict(orient='records')
+    cursor.execute("SELECT * FROM student")
+    student_data = cursor.fetchall()
     cursor.close()
     db.close()
 
-    return render_template('response.html', data=data)
+    return render_template('response.html', data=data, student=student_data)
 
 @app.route('/record/score', methods=['POST'])
 def record_score():
@@ -524,7 +582,7 @@ def record_score():
     student_id = request.form['student_id']
     assessment_id = request.form['assessment_id']
     date = request.form['date']
-    
+
     db = get_db_connection()
     cursor = db.cursor()
     cursor.execute(
@@ -533,8 +591,51 @@ def record_score():
     db.commit()
     cursor.close()
     db.close()
-    return redirect(url_for('assessment'))
+    return redirect(url_for('view_response', id=assessment_id))
 
+# Generate Performance Report
+@app.route('/performance/report/<int:id>') 
+def generate_performanceReport(id):
+    db = get_db_connection()
+    query = "SELECT * FROM assessment_result JOIN student ON student.id = assessment_result.student_id WHERE student.id=%s"
+    raw_data = pd.read_sql(query, db, params=(id, ))
+    data_list = []
+    for _, row in raw_data.iterrows():
+        items_query = "SELECT COUNT(*) as item_count, assessment.title as title FROM assessment_item JOIN assessment ON assessment.id = assessment_item.assessment_id WHERE assessment.id=%s"
+        item = pd.read_sql(items_query, db, params=(row['assessment_id'],))
+        items = item.loc[0, 'item_count']
+
+        data_list.append({
+            'Assessment': item.loc[0, 'title'],
+            'Score': str(row['score']) + "/" + str(items),
+            'Date': row['date']
+        })
+    data = pd.DataFrame(data_list)
+    pdf_file = "performance_report.pdf"
+    doc = SimpleDocTemplate(pdf_file, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    title = Paragraph("Assessment Report", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    table_data = [data.columns.tolist()] + data.values.tolist()
+
+    table = Table(table_data, colWidths=[doc.pagesize[0] * 0.9 / len(table_data[0])] * len(table_data[0]))
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+    return send_file(pdf_file, as_attachment=True)
+    
 # create admin account
 def seed_user():
     db = get_db_connection()

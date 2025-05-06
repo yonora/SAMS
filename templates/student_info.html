@@ -24,6 +24,7 @@
                   <td class="text-end">
                       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editStudentModal" data-id="{{ row[0] }}" data-student-id="{{ row[1] }}" data-student-name="{{ row[2] }}" data-year-section="{{ row[3] }}">Edit</button>
                       <button onclick="confirmDelete('{{ url_for('delete_student', id=row[0]) }}')" class="btn btn-danger">Delete</button>
+                      <a role="button" class="btn btn-success" href="{{ url_for('generate_performanceReport', id=row[0]) }}">Generate Performance Report</a>
                   </td>
               </tr>
               {% endfor %}
@@ -110,7 +111,7 @@
 
         var modalTitle = editStudentModal.querySelector('.modal-title');
         var form = document.getElementById('editStudentForm');
-        form.action = "/students/edit/" + id;
+        form.action = "/students/" + id + "/edit";
 
         var studentidInput = editStudentModal.querySelector('#edit_student_id');
         var studentNameInput = editStudentModal.querySelector('#edit_student_name');

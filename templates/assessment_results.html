@@ -22,49 +22,58 @@
         </div>
     </div>
     <div class="card-body">
+        <!-- Get partial score -->
+        {% set score = response | selectattr("5", "equalto", 1) | list | length %}
+
         <!-- Multiple Choice -->
         {% set multiple_choice = items | selectattr("type", "equalto", "Multiple Choice") | list %}
-        {% set score = response | selectattr("5", "equalto", 1) | list | length %}
+
         {% if multiple_choice %}
             <h5 class="card-title mb-3">MULTIPLE CHOICE</h5>
             {% for item in multiple_choice %}
-            {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
-            {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
-            <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
-                <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
-                {% for choice in item['choice'] %}
-                <div class="d-flex flex-row">
-                    <input type="radio" id="{{'choices'~loop.index}}" name="answer_{{ item['id'] }}" value="{{choice}}" {% if answer[1] == choice %}checked{% endif %} class="form-check-input me-2" disabled>
-                    <label for="{{'choices'~loop.index}}" class="form-check-label">{{ choice }}</label>
+                {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
+                {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
+                <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
+                    <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
+                    {% for choice in item['choice'] %}
+                        <div class="d-flex flex-row">
+                            <input type="radio" id="{{'choices'~loop.index}}" name="answer_{{ item['id'] }}" value="{{choice}}" {% if answer[1] == choice %}checked{% endif %} class="form-check-input me-2" disabled>
+                            <label for="{{'choices'~loop.index}}" class="form-check-label">{{ choice }}</label>
+                        </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
             {% endfor %}
         {% endif %}
+
+        <!-- IDENTIFICATION -->
         {% set identification = items | selectattr("type", "equalto", "Identification") | list %}
         {% if identification %}
             <h5 class="card-title mb-3">IDENTIFICATION</h5>
-        {% for item in identification %}
-        {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
-        {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
-        <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
-            <div class="d-flex justify-content-between">
-                <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
-                {% if current_user.is_authenticated %}
-                <div class="d-flex">
-                    <button onclick="check(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-success"><i class="bi bi-check fs-2"></i></button>
-                    <button onclick="uncheck(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-danger"><i class="bi bi-x fs-3"></i></button>
+            {% for item in identification %}
+                {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
+                {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
+                <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
+
+                        <!-- Manual checking of the answer -->
+                        <!-- {% if current_user.is_authenticated and answer[5] is none %}
+                        <div class="d-flex">
+                            <button onclick="check(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-success"><i class="bi bi-check fs-2"></i></button>
+                            <button onclick="uncheck(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-danger"><i class="bi bi-x fs-3"></i></button>
+                        </div>
+                        {% endif %} -->
+
+                    </div>
+                    <input type="text" name="answer_{{ item['id'] }}" class="form-control bg-transparent border border-black" value="{{answer[1]}}" readonly>
                 </div>
-                {% endif %}
-            </div>
-            <input type="text" name="answer_{{ item['id'] }}" class="form-control bg-transparent border border-black" value="{{answer[1]}}" readonly>
-        </div>
-        {% endfor %}
+            {% endfor %}
         {% endif %}
     </div>
     <div class="card-footer d-flex flex-column justify-content-center">
+        {% set partial = response | selectattr("5", "equalto", none) | list | length > 0 %}
         <h5 class="card-title mb-3">
-            SCORE {% if response | selectattr("5", "equalto", none) | list | length > 0 %}(Partial){% endif %}: 
+            SCORE {% if partial %}(Partial){% endif %}: 
             <span>{{score}}</span>
         </h5>
     </div>

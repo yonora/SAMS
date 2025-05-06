@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Quiz{% endblock %}
+{% block title %}add Assessment{% endblock %}
 
 {% block content %}
 <form method="POST" action="{{ url_for('add_questionBank') }}">
@@ -19,7 +19,7 @@
             </div>
             <div class="mb-3">
                 <label for="title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="title" name="title">
+                <input type="text" class="form-control" id="title" name="title" placeholder="Quiz 1/First Term Exam">
             </div>
         </div>
         <div class="card-body">
@@ -44,7 +44,7 @@
                     </div>
                     <div class="mb-3 hidden choices_container_1">
                         <label for="choices_1" class="form-label">Choices</label>
-                        <input type="text" class="form-control" id="choices_1" name="choices_1">
+                        <input type="text" class="form-control" id="choices_1" name="choices_1" placeholder="Choice1, Choice2, Choice3">
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@
                     <input type="text" class="form-control" id="choices_${index}" name="choices_${index}">
                 </div>
             </div>
-            `);
+        `);
     }
 
     document.addEventListener('change', function(event) {
