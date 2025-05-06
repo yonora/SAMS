@@ -113,7 +113,7 @@ A Flask-based web application for managing student accounts, recording attendanc
 
    CREATE TABLE student (
      id INT AUTO_INCREMENT PRIMARY KEY,
-     student_id INT(6) NOT NULL,
+     student_id VARCHAR(10) NOT NULL,
      student_name VARCHAR(255) NOT NULL,
      year_section VARCHAR(255) NOT NULL
    );

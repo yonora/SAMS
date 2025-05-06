@@ -341,7 +341,7 @@ def generate_attReport():
 
     doc.build(elements)
     return send_file(pdf_file, as_attachment=True)
-    
+
 # Assessment Management
 # Displaying assessment list
 @app.route('/assessment')
@@ -548,15 +548,17 @@ def view_assessment(assessment_id, student_id):
 def view_response(id):
     db = get_db_connection()
     cursor = db.cursor()
+    data = []
     status_list = []
     score_list = []
     id_list = []
     date_list = []
+
     # Group response
     response_query = "SELECT assessment_response.id, assessment_response.is_correct, assessment_response.assessment_id, assessment_response.student_id, student.student_name  FROM assessment_response JOIN student ON student.id = assessment_response.student_id WHERE assessment_id = %s"
     response = pd.read_sql(response_query, db, params=(id,))
-    grouped = response.groupby(['assessment_id','student_id', 'student_name'])['is_correct'].sum().reset_index()
 
+    grouped = response.groupby(['assessment_id','student_id', 'student_name'])['is_correct'].sum().reset_index()
     for index, row in grouped.iterrows():
         result_query = "SELECT id, COUNT(*) as results, score, date FROM assessment_result WHERE assessment_id=%s AND student_id=%s"
         results = pd.read_sql(result_query, db, params=(row['assessment_id'], row['student_id']))
@@ -584,6 +586,7 @@ def view_response(id):
     grouped['date'] = date_list
 
     data = grouped.to_dict(orient='records')
+    
     cursor.execute("SELECT * FROM student")
     student_data = cursor.fetchall()
     cursor.close()

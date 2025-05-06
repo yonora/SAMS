@@ -7,7 +7,9 @@
   <div class="card-body">
     <div class="d-flex flex-row justify-content-between">
         <h5 class="card-title text-bold">Responses</h5>
+        {% if data %}
         <button class="btn btn-primary record" data-bs-toggle="modal" data-bs-target="#addScoreModal" data-assessment_id="{{data[0]['assessment_id']}}">Record Score</button>
+        {% endif %}
     </div>
     <table class="table table-striped">
         <thead>
