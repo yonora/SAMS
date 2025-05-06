@@ -639,7 +639,7 @@ def generate_performanceReport(id):
         items_query = "SELECT COUNT(*) as item_count, assessment.title as title FROM assessment_item JOIN assessment ON assessment.id = assessment_item.assessment_id WHERE assessment.id=%s"
         item = pd.read_sql(items_query, db, params=(row['assessment_id'],))
         items = item.loc[0, 'item_count']
-
+        student = row['student_name']
         data_list.append({
             'Assessment': item.loc[0, 'title'],
             'Score': str(row['score']) + "/" + str(items),
@@ -650,7 +650,8 @@ def generate_performanceReport(id):
     doc = SimpleDocTemplate(pdf_file, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
-    title = Paragraph("Assessment Report", styles['Title'])
+    title = Paragraph("Assessment Report - "+ student, styles['Title'])
+    
     elements.append(title)
     elements.append(Spacer(1, 12))
 
