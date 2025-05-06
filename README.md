@@ -1,13 +1,15 @@
-# Sley - Student Management System
+# Sley - Student Assessment and Management System
 
-A Flask-based web application for managing student attendance, exams, and quizzes.
+A Flask-based web application for managing student accounts, recording attendance and assessment scores, and generating reports.
 
 ## Features
 
-- Track student attendance
-- Manage exam records
-- Record quiz results
-- Simple and intuitive interface
+## 🚀 Features
+
+- Manage student accounts and information  
+- Track and record student attendance  
+- Create quizzes and exams, and record scores  
+- Generate performance and attendance reports (PDF)
 
 ## Prerequisites
 
@@ -21,11 +23,6 @@ A Flask-based web application for managing student attendance, exams, and quizze
    ```
    git clone https://github.com/yourusername/Sley.git
    cd Sley
-   ```
-
-   #### After cloning the repo, extract the zip file and then navigate to the directory
-   ```
-   cd tracker
    ```
 
 2. Create a virtual environment:
@@ -129,19 +126,6 @@ A Flask-based web application for managing student attendance, exams, and quizze
      FOREIGN KEY (student_id) REFERENCES student(id)
    );
    
-   CREATE TABLE exam (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     student_name VARCHAR(255) NOT NULL,
-     exam_date DATE NOT NULL,
-     score FLOAT NOT NULL
-   );
-   
-   CREATE TABLE quiz (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     student_name VARCHAR(255) NOT NULL,
-     quiz_date DATE NOT NULL,
-     score FLOAT NOT NULL
-   );
 
    CREATE TABLE assessment(
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -169,12 +153,12 @@ A Flask-based web application for managing student attendance, exams, and quizze
       id INT AUTO_INCREMENT PRIMARY KEY,
       answer VARCHAR(255) NOT NULL,
       item_id INT NOT NULL,
-      FOREIGN KEY(item_id) REFERENCES assessment_item(id)
+      FOREIGN KEY(item_id) REFERENCES assessment_item(id),
       student_id INT NOT NULL,
       FOREIGN KEY (student_id) REFERENCES student(id),
       assessment_id INT NOT NULL,
-      FOREIGN KEY(assessment_id) REFERENCES assessment(id)
-      
+      FOREIGN KEY(assessment_id) REFERENCES assessment(id),
+      is_correct BOOLEAN
    );
 
    CREATE TABLE assessment_result (
@@ -220,9 +204,16 @@ A Flask-based web application for managing student attendance, exams, and quizze
 - `templates/` - HTML templates
   - `index.html` - Home page
   - `attendance.html` - Attendance management
-  - `exam.html` - Exam records
-  - `quiz.html` - Quiz results
-  - `base.html` - Base template for consistent layout
+  - `base.html` - Base template for authenticated users
+  - `guest.html` - Base template for guest
+  - `login.html` - Admin login page
+  - `student_login.html` - Student login page
+  - `student_info.html` - Student account/info management
+  - `assessment.html` - Assessment management
+  - `add_assessment.html` - Question bank creation
+  - `assessment_module.html` - Quiz and Exam Module
+  - `assessment_results.html` - Assessment results page
+  - `response.html` - Assessment response page
 - `static/js` - Static files
   - `alert.js` - JavaScript for displaying alerts and notifications
 

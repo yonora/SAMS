@@ -14,6 +14,7 @@
             <tr>
                 <th>Student Name</th>
                 <th>Status</th>
+                <th>Score</th>
                 <th class="text-end">Actions</th>
             </tr>
         </thead>
@@ -22,7 +23,9 @@
             <tr>
                 <td>{{ row['student_name'] }}</td>
                 <td>{{ row['status'] }}</td>
+                <td>{{ row['score'] }}</td>
                 <td class="text-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editScoreModal" data-id="{{ row['id'] }}" data-assessment_id="{{ row['assessment_id'] }}" data-student_id="{{ row['student_id'] }}" data-score="{{ row['score'] }}" data-date="{{ row['date'] }}" {% if row['score'] is string %}disabled{% endif %}>Edit</button>
                     <a role="button" class="btn btn-success" href="{{ url_for('view_assessment', assessment_id=row['assessment_id'], student_id=row['student_id']) }} ">View Answers</a>
                 </td>
             </tr>
@@ -69,6 +72,43 @@
     </div>
 </div>
 
+<!-- Edit Score Modal -->
+<div class="modal fade" id="editScoreModal" tabindex="-1" aria-labelledby="editScoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="editScoreForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editScoreModalLabel">Edit Score</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_assessment_id" name="assessment_id" required>
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <select name="student_id" id="edit_student_id"  class="form-control" required>
+                            {% for stud in student %}
+                            <option value="{{stud[0]}}">{{ stud[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="score" class="form-label">Score</label>
+                        <input type="number" class="form-control" id="edit_score" name="score" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="edit_date" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -79,6 +119,30 @@
             modal = document.querySelector('#addScoreModal')
             modal.querySelector('#assessment_id').value = assessment_id;
         });
+    });
+
+    var editScoreModal = document.getElementById('editScoreModal');
+    editScoreModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var student_id = button.getAttribute('data-student_id');
+        var assessment_id = button.getAttribute('data-assessment_id');
+        var score = button.getAttribute('data-score');
+        var date = button.getAttribute('data-date');
+
+        var modalTitle = editScoreModal.querySelector('.modal-title');
+        var form = document.getElementById('editScoreForm');
+        form.action = "/edit/score/" + id;
+
+        var studentidInput = editScoreModal.querySelector('#edit_student_id');
+        var assessmentIdInput = editScoreModal.querySelector('#edit_assessment_id');
+        var scoreInput = editScoreModal.querySelector('#edit_score');
+        var dateInput = editScoreModal.querySelector('#edit_date');
+
+        studentidInput.value = student_id;
+        assessmentIdInput.value = assessment_id;
+        scoreInput.value = score;
+        dateInput.value = date;
     });
 </script>
 {% endblock %}

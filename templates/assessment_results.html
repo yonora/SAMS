@@ -32,7 +32,7 @@
             <h5 class="card-title mb-3">MULTIPLE CHOICE</h5>
             {% for item in multiple_choice %}
                 {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
-                {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
+                {% set color = 'bg-success-subtle' if answer[4] else 'bg-danger-subtle' %}
                 <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
                     <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
                     {% for choice in item['choice'] %}
@@ -51,19 +51,9 @@
             <h5 class="card-title mb-3">IDENTIFICATION</h5>
             {% for item in identification %}
                 {% set answer = response | selectattr("2", "equalto", item['id']) | first %}
-                {% set color = '' if answer[5] is none else 'bg-success-subtle' if answer[5] else 'bg-danger-subtle' %}
-                <div class="d-flex flex-column p-3 rounded mb-2 {{color}}">
+                <div class="d-flex flex-column p-3 rounded mb-2">
                     <div class="d-flex justify-content-between">
                         <h6 class="text-bold"><span>{{loop.index~'.'}}</span> {{ item['question'] }}</h6>
-
-                        <!-- Manual checking of the answer -->
-                        <!-- {% if current_user.is_authenticated and answer[5] is none %}
-                        <div class="d-flex">
-                            <button onclick="check(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-success"><i class="bi bi-check fs-2"></i></button>
-                            <button onclick="uncheck(event, {{item['id']}})" data-student_id="{{answer[3]}}" class="btn btn-link text-danger"><i class="bi bi-x fs-3"></i></button>
-                        </div>
-                        {% endif %} -->
-
                     </div>
                     <input type="text" name="answer_{{ item['id'] }}" class="form-control bg-transparent border border-black" value="{{answer[1]}}" readonly>
                 </div>
@@ -82,33 +72,7 @@
 
 {% block extra_js %}
 <script>
-    function check(event, item_id)
-    {
-        const button = event.currentTarget;
-        const student_id = event.currentTarget.dataset.student_id;
-        fetch('/item/'+ item_id +'/check', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                status: 'correct',
-                student_id: student_id
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.status == 'success'){
-                button.classList.add('hidden');
-                button.nextElementSibling.classList.add('hidden');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-
-    function uncheck(event, item_id)
+    
     {
         const button = event.currentTarget;
         const student_id = event.currentTarget.dataset.student_id;

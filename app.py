@@ -50,6 +50,24 @@ def load_user(user_id):
         return User(user_id=admin[0], email=admin[1], role=admin[2])
     return None  # If no user found
 
+# create admin account
+def seed_user():
+    db = get_db_connection()
+    cursor = db.cursor()
+    email = 'admin@gmail.com'
+    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+    user = cursor.fetchone()
+    if not user:
+        role = 'admin'
+        password = generate_password_hash('admin123')
+        cursor.execute(
+            "INSERT INTO users (email, password, role) VALUES (%s, %s, %s)",
+            (email, password, role)
+        )
+        db.commit()
+        cursor.close()
+        db.close()
+
 # Check if the user is authenticated and admin
 def authorize():
     return current_user.is_authenticated and current_user.role == 'admin'
@@ -285,13 +303,12 @@ def generate_attReport():
     db = get_db_connection()
     query = "SELECT * FROM attendance JOIN student ON student.id = attendance.student_id"
     raw_data = pd.read_sql(query, db)
-
     df = pd.DataFrame(raw_data)
-    # data = df.groupby(['date', 'year_section'])['status'].value_counts().unstack(fill_value=0).apply(list).reset_index()
-    # Group by date, year_section, and status; collect student names
+
+    # Group by date, year_section, and status
     data = df.groupby(['date', 'year_section', 'status'])['student_name'].apply(list).unstack(fill_value=[]).reset_index()
 
-    # Optional: Rename columns
+    # Rename columns
     data.columns.name = None
     data.columns = ['Date', 'Year and Section', 'Absent Students', 'Present Students']
 
@@ -463,23 +480,26 @@ def take_assessment(id):
                 type = cursor.fetchone()
 
                 answer = request.form[f'answer_{item_id}']
+
                 # Check assessment type
                 if type[1] == 'Multiple Choice':
                     if type[2] == answer:
                         is_correct = True
                 else:
                     is_correct = None 
+
                 # Store each answer on the database
                 cursor.execute(
                     "INSERT INTO assessment_response(answer, item_id, student_id, assessment_id, is_correct) VALUES (%s, %s, %s, %s, %s)",
                     (answer, item_id, student[0], id, is_correct))
-                db.commit()
-                cursor.close()
-                db.close()
-                flash("Assessment Completed!", 'success')
-                return redirect(url_for('assessment'))
+                
+        db.commit()
+        cursor.close()
+        db.close()
+        flash("Assessment Completed!", 'success')
+        return redirect(url_for('assessment'))
     
-    # Group and aggregate items and choices
+    # Group item and choices
     items_query = "SELECT assessment_item.id, assessment_item.question, assessment_item.type, assessment_choices.choice, assessment_choices.item_id FROM assessment_item LEFT JOIN assessment_choices ON assessment_choices.item_id = assessment_item.id WHERE assessment_item.assessment_id = %s"
     df = pd.read_sql(items_query, db, params=(id,))
     grouped = df.groupby(['id', 'question', 'type'])['choice']\
@@ -499,9 +519,10 @@ def view_assessment(assessment_id, student_id):
     db = get_db_connection()
     cursor = db.cursor()
 
-    # Group and aggregate items and choices
     items_query = "SELECT assessment_item.id, assessment_item.question, assessment_item.answer, assessment_item.type, assessment_choices.choice, assessment_choices.item_id FROM assessment_item LEFT JOIN assessment_choices ON assessment_choices.item_id = assessment_item.id WHERE assessment_item.assessment_id = %s"
     df = pd.read_sql(items_query, db, params=(assessment_id,))
+
+    # Group item and choices
     grouped = df.groupby(['id', 'question', 'type', 'answer'])['choice']\
                 .apply(list).reset_index()
     items = grouped.to_dict(orient='records')
@@ -522,51 +543,46 @@ def view_assessment(assessment_id, student_id):
     db.close()
     return render_template('assessment_results.html', assessment=assessment, items=items, student=student, response=response)
 
-# Manual checking of answers
-@app.route('/item/<int:id>/check', methods=['POST'])
-def checkAnswer(id):
-    # Handle ajax request
-    data = request.get_json()
-    status = data.get('status')
-    student_id = data.get('student_id')
-
-    db = get_db_connection()
-    cursor = db.cursor()
-    if status == 'correct':
-        cursor.execute(
-            "UPDATE assessment_response SET is_correct = %s WHERE item_id=%s AND student_id=%s",
-            (True, id, student_id))
-    else:
-        cursor.execute(
-            "UPDATE assessment_response SET is_correct = %s WHERE item_id=%s AND student_id=%s",
-            (False, id, student_id))
-    db.commit()
-    cursor.close()
-    db.close()
-
-    # Return the JSON response
-    return jsonify({
-        'status': 'success',
-    })
-
 # Display assessment response
 @app.route('/assessment/<int:id>/response')
 def view_response(id):
     db = get_db_connection()
     cursor = db.cursor()
     status_list = []
+    score_list = []
+    id_list = []
+    date_list = []
     # Group response
-    response_query = "SELECT assessment_response.id, assessment_response.assessment_id, assessment_response.student_id, student.student_name  FROM assessment_response JOIN student ON student.id = assessment_response.student_id WHERE assessment_id = %s"
+    response_query = "SELECT assessment_response.id, assessment_response.is_correct, assessment_response.assessment_id, assessment_response.student_id, student.student_name  FROM assessment_response JOIN student ON student.id = assessment_response.student_id WHERE assessment_id = %s"
     response = pd.read_sql(response_query, db, params=(id,))
-    grouped = response.groupby(['assessment_id','student_id', 'student_name']).apply(list).reset_index()
+    grouped = response.groupby(['assessment_id','student_id', 'student_name'])['is_correct'].sum().reset_index()
+
     for index, row in grouped.iterrows():
-        result_query = "SELECT COUNT(*) as results FROM assessment_result WHERE assessment_id=%s AND student_id=%s"
+        result_query = "SELECT id, COUNT(*) as results, score, date FROM assessment_result WHERE assessment_id=%s AND student_id=%s"
         results = pd.read_sql(result_query, db, params=(row['assessment_id'], row['student_id']))
+
+        # Set statuses per student response
         status = "Recorded" if results['results'].iloc[0] > 0 else "Not Recorded"
         status_list.append(status)
 
-    # Add the status list to the grouped DataFrame
+        # Get scores per student response
+        score = results['score'].iloc[0] if results['score'].iloc[0] else f"Partial: {row['is_correct']}"
+        score_list.append(score)
+
+        # Get ids of assessment results
+        id = results['id'].iloc[0]
+        id_list.append(id)
+
+        # Get ids of assessment results
+        date = results['date'].iloc[0]
+        date_list.append(date)
+
+    # Add the status, score, id, and date list to the grouped DataFrame
     grouped['status'] = status_list
+    grouped['score'] = score_list
+    grouped['id'] = id_list
+    grouped['date'] = date_list
+
     data = grouped.to_dict(orient='records')
     cursor.execute("SELECT * FROM student")
     student_data = cursor.fetchall()
@@ -592,6 +608,25 @@ def record_score():
     cursor.close()
     db.close()
     return redirect(url_for('view_response', id=assessment_id))
+
+@app.route('/edit/score/<int:id>', methods=['POST'])
+def edit_score(id):
+    # Get form data
+    score = request.form['score']
+    student_id = request.form['student_id']
+    assessment_id = request.form['assessment_id']
+    date = request.form['date']
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute(
+        'UPDATE assessment_result SET score=%s, student_id=%s, assessment_id=%s, date=%s WHERE id=%s)',
+        (score, student_id, assessment_id, date, id))
+    db.commit()
+    cursor.close()
+    db.close()
+    return redirect(url_for('view_response', id=assessment_id))
+
 
 # Generate Performance Report
 @app.route('/performance/report/<int:id>') 
@@ -635,25 +670,6 @@ def generate_performanceReport(id):
 
     doc.build(elements)
     return send_file(pdf_file, as_attachment=True)
-    
-# create admin account
-def seed_user():
-    db = get_db_connection()
-    cursor = db.cursor()
-    email = 'admin@gmail.com'
-    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
-    if not user:
-        role = 'admin'
-        password = generate_password_hash('admin123')
-        cursor.execute(
-            "INSERT INTO users (email, password, role) VALUES (%s, %s, %s)",
-            (email, password, role)
-        )
-        db.commit()
-        cursor.close()
-        db.close()
-    
 
 if __name__ == '__main__':
     seed_user()
