@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, jsonify
+import mysql.connector
+from dotenv import load_dotenv
+import os
 from flask_login import LoginManager, UserMixin, logout_user, login_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from dotenv import load_dotenv
-import mysql.connector
-import os
 import pandas as pd
 
 load_dotenv()  # Load environment variables from .env file
@@ -297,25 +297,42 @@ def delete_attendance(id):
     flash('Attendance record successfully deleted!', 'success')
     return redirect(url_for('attendance'))
 
-# Generate Attendance Report
-@app.route('/attendance/report') 
-def generate_attReport():
+# Display report
+def displayReport(report_data, columns, title, link, id=''):
+    data = report_data.to_dict(orient='records')
+    return render_template('report.html', data=data, columns=columns, title=title, link=link, id=id)
+
+# Get attendance data
+def getAttendanceData():
     db = get_db_connection()
-    query = "SELECT * FROM attendance JOIN student ON student.id = attendance.student_id"
+    data = []
+    columns = []
+    query = "SELECT * FROM attendance JOIN student on student.id = attendance.student_id"
     raw_data = pd.read_sql(query, db)
     df = pd.DataFrame(raw_data)
 
     # Group by date, year_section, and status
     data = df.groupby(['date', 'year_section', 'status'])['student_name'].apply(list).unstack(fill_value=[]).reset_index()
+    columns = ['Date', 'Year and Section', 'Absent Students', 'Present Students']
+    if not data.empty:
 
-    # Rename columns
-    data.columns.name = None
-    data.columns = ['Date', 'Year and Section', 'Absent Students', 'Present Students']
+        if 'Absent' not in data.columns:
+            data['Absent'] = [[] for _ in range(len(data))]
+        if 'Present' not in data.columns:
+            data['Present'] = [[] for _ in range(len(data))]
 
-    # Convert student name lists to comma-separated strings
-    data['Absent Students'] = data['Absent Students'].apply(lambda names: ', '.join(names))
-    data['Present Students'] = data['Present Students'].apply(lambda names: ', '.join(names))
+        data = data[['date', 'year_section', 'Absent', 'Present']]
 
+        # Convert student name lists to comma-separated strings
+        data['Absent'] = data['Absent'].apply(lambda names: ', '.join(names))
+        data['Present'] = data['Present'].apply(lambda names: ', '.join(names))
+        data.columns = columns
+    return data, columns
+
+# Generate Attendance Report
+@app.route('/attendance/report/export/') 
+def export_attReport():
+    data, columns = getAttendanceData()
     pdf_file = "attendance_report.pdf"
     doc = SimpleDocTemplate(pdf_file, pagesize=A4)
     elements = []
@@ -324,9 +341,16 @@ def generate_attReport():
     title = Paragraph("Attendance Report", styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 12))
-    data.columns =  ['Date', 'Year and Section',  'Present Students', 'Absent Students']
-    table_data = [data.columns.tolist()] + data.values.tolist()
 
+    if data.empty:
+        table_data = [columns]
+        
+    else:
+        data = pd.DataFrame(data)
+        table_data = [data.columns.tolist()]
+        for row in data.values.tolist():
+            wrapped_row = [Paragraph(str(cell), ParagraphStyle(name="wrap", wordWrap="normal")) for cell in row]
+            table_data.append(wrapped_row)
     table = Table(table_data, colWidths=[doc.pagesize[0] * 0.9 / len(table_data[0])] * len(table_data[0]))
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
@@ -336,12 +360,16 @@ def generate_attReport():
         ('TOPPADDING', (0, 0), (-1, -1), 8),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
     ]))
-
     elements.append(table)
-
     doc.build(elements)
     return send_file(pdf_file, as_attachment=True)
 
+# Generate Attendance Report
+@app.route('/attendance/report') 
+def generate_attReport():
+    data, columns = getAttendanceData()
+    return displayReport(data, columns, "Attendance Report", 'export_attReport')
+   
 # Assessment Management
 # Displaying assessment list
 @app.route('/assessment')
@@ -630,37 +658,51 @@ def edit_score(id):
     db.close()
     return redirect(url_for('view_response', id=assessment_id))
 
-
-# Generate Performance Report
-@app.route('/performance/report/<int:id>') 
-def generate_performanceReport(id):
+def getPerformanceData(id):
     db = get_db_connection()
-    query = "SELECT * FROM assessment_result JOIN student ON student.id = assessment_result.student_id WHERE student.id=%s"
+    query = "SELECT * FROM assessment_result WHERE student_id=%s"
     raw_data = pd.read_sql(query, db, params=(id, ))
+    query = "SELECT * FROM student WHERE id=%s"
+    student = pd.read_sql(query, db, params=(id, ))
     data_list = []
-    for _, row in raw_data.iterrows():
-        items_query = "SELECT COUNT(*) as item_count, assessment.title as title FROM assessment_item JOIN assessment ON assessment.id = assessment_item.assessment_id WHERE assessment.id=%s"
-        item = pd.read_sql(items_query, db, params=(row['assessment_id'],))
-        items = item.loc[0, 'item_count']
-        student = row['student_name']
-        data_list.append({
-            'Assessment': item.loc[0, 'title'],
-            'Score': str(row['score']) + "/" + str(items),
-            'Date': row['date']
-        })
+    student_name = student['student_name'].iloc[0]
+    columns = ['Assessment', 'Score', 'Data']
+    if not raw_data.empty:
+        for _, row in raw_data.iterrows():
+            items_query = "SELECT COUNT(*) as item_count, assessment.title as title FROM assessment_item JOIN assessment ON assessment.id = assessment_item.assessment_id WHERE assessment.id=%s"
+            item = pd.read_sql(items_query, db, params=(row['assessment_id'],))
+            items = item.loc[0, 'item_count']
+            data_list.append({
+                'Assessment': item.loc[0, 'title'],
+                'Score': str(row['score']) + "/ " + str(items),
+                'Date': row['date'] if row['date'] else ''
+            })
+    data = pd.DataFrame(data_list)
+    return data, columns, student_name
+
+# Export Performance Report
+@app.route('/performance/report/export/<int:id>') 
+def export_performance(id):
+    data_list, columns, student = getPerformanceData(id)
     data = pd.DataFrame(data_list)
     pdf_file = "performance_report.pdf"
     doc = SimpleDocTemplate(pdf_file, pagesize=A4)
     elements = []
+
     styles = getSampleStyleSheet()
-    title = Paragraph("Assessment Report - "+ student, styles['Title'])
-    
+    title = Paragraph("Assessment Report - " + student, styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 12))
 
-    table_data = [data.columns.tolist()] + data.values.tolist()
+    if data.empty:
+        table_data = [columns]
+    else:
+        table_data = [data.columns.tolist()]
+        for row in data.values.tolist():
+            wrapped_row = [Paragraph(str(cell), ParagraphStyle(name="wrap", wordWrap="normal")) for cell in row]
+            table_data.append(wrapped_row)
 
-    table = Table(table_data, colWidths=[doc.pagesize[0] * 0.9 / len(table_data[0])] * len(table_data[0]))
+    table = Table(table_data)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -675,6 +717,12 @@ def generate_performanceReport(id):
     doc.build(elements)
     return send_file(pdf_file, as_attachment=True)
 
+# Generate Performance Report
+@app.route('/performance/report/<int:id>')
+def generate_performanceReport(id):  
+    data_list, columns, student = getPerformanceData(id)
+    return displayReport(data_list, columns, "Performance Report - " + student, 'export_performance', id=id)
+    
 if __name__ == '__main__':
     seed_user()
     app.run(debug=True)
