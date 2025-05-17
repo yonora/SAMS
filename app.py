@@ -588,29 +588,34 @@ def view_response(id):
 
     grouped = response.groupby(['assessment_id','student_id', 'student_name'])['is_correct'].sum().reset_index()
     for index, row in grouped.iterrows():
-        result_query = "SELECT id, COUNT(*) as results, score, date FROM assessment_result WHERE assessment_id=%s AND student_id=%s"
+        result_query = "SELECT id, COUNT(*) as results, score, date FROM assessment_result WHERE assessment_id=%s AND student_id=%s GROUP BY id, score, date"
         results = pd.read_sql(result_query, db, params=(row['assessment_id'], row['student_id']))
+        if not results.empty:
+            # Set statuses per student response
+            status = "Recorded" if results['results'].iloc[0] > 0 else "Not Recorded"
+            status_list.append(status)
 
-        # Set statuses per student response
-        status = "Recorded" if results['results'].iloc[0] > 0 else "Not Recorded"
-        status_list.append(status)
+            # Get scores per student response
+            score = results['score'].iloc[0] if pd.notna(results['score'].iloc[0]) else f"Partial: {row['is_correct']}"
+            score_list.append(score)
 
-        # Get scores per student response
-        score = results['score'].iloc[0] if results['score'].iloc[0] else f"Partial: {row['is_correct']}"
-        score_list.append(score)
+            # Get ids of assessment results
+            id = results['id'].iloc[0]
+            id_list.append(id)
 
-        # Get ids of assessment results
-        id = results['id'].iloc[0]
-        id_list.append(id)
-
-        # Get ids of assessment results
-        date = results['date'].iloc[0]
-        date_list.append(date)
+            # Get ids of assessment results
+            date = results['date'].iloc[0]
+            date_list.append(date)
+        else:
+            status_list.append("Not Recorded")
+            score_list.append(f"Partial: {row['is_correct']}")
+            id_list.append(0) 
+            date_list.append(None) 
 
     # Add the status, score, id, and date list to the grouped DataFrame
     grouped['status'] = status_list
     grouped['score'] = score_list
-    grouped['id'] = id_list
+    grouped['result_id'] = id_list
     grouped['date'] = date_list
 
     data = grouped.to_dict(orient='records')

@@ -27,7 +27,7 @@
                 <td>{{ row['status'] }}</td>
                 <td>{{ row['score'] }}</td>
                 <td class="text-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editScoreModal" data-id="{{ row['id'] }}" data-assessment_id="{{ row['assessment_id'] }}" data-student_id="{{ row['student_id'] }}" data-score="{{ row['score'] }}" data-date="{{ row['date'] }}" {% if row['score'] is string %}disabled{% endif %}>Edit</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editScoreModal" data-id="{{ row['result_id'] }}" data-assessment_id="{{ row['assessment_id'] }}" data-student_id="{{ row['student_id'] }}" data-score="{{ row['score'] }}" data-date="{{ row['date'] }}" {% if row['score'] is string %}disabled{% endif %}>Edit</button>
                     <a role="button" class="btn btn-success" href="{{ url_for('view_assessment', assessment_id=row['assessment_id'], student_id=row['student_id']) }} ">View Answers</a>
                 </td>
             </tr>
