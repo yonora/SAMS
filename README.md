@@ -123,7 +123,7 @@ A Flask-based web application for managing student accounts, recording attendanc
      date DATE NOT NULL,
      status VARCHAR(50) NOT NULL,
      student_id INT NOT NULL,
-     FOREIGN KEY (student_id) REFERENCES student(id)
+     FOREIGN KEY (student_id) REFERENCES student(id) ON CASCADE DELETE
    );
    
 
@@ -139,25 +139,25 @@ A Flask-based web application for managing student accounts, recording attendanc
       question TEXT NOT NULL,
       answer VARCHAR(255) NOT NULL,
       assessment_id INT NOT NULL,
-      FOREIGN KEY (assessment_id) REFERENCES assessment(id)
+      FOREIGN KEY (assessment_id) REFERENCES assessment(id) ON CASCADE DELETE
    );
 
    CREATE TABLE assessment_choices (
       id INT AUTO_INCREMENT PRIMARY KEY,
       choice VARCHAR(50) NOT NULL,
       item_id INT NOT NULL,
-      FOREIGN KEY (item_id) REFERENCES assessment_item(id)
+      FOREIGN KEY (item_id) REFERENCES assessment_item(id) ON CASCADE DELETE
    );
 
    CREATE TABLE assessment_response (
       id INT AUTO_INCREMENT PRIMARY KEY,
       answer VARCHAR(255) NOT NULL,
       item_id INT NOT NULL,
-      FOREIGN KEY(item_id) REFERENCES assessment_item(id),
+      FOREIGN KEY(item_id) REFERENCES assessment_item(id) ON CASCADE DELETE,
       student_id INT NOT NULL,
-      FOREIGN KEY (student_id) REFERENCES student(id),
+      FOREIGN KEY (student_id) REFERENCES student(id) ON CASCADE DELETE,
       assessment_id INT NOT NULL,
-      FOREIGN KEY(assessment_id) REFERENCES assessment(id),
+      FOREIGN KEY(assessment_id) REFERENCES assessment(id) ON CASCADE DELETE,
       is_correct BOOLEAN
    );
 
@@ -165,9 +165,9 @@ A Flask-based web application for managing student accounts, recording attendanc
       id INT AUTO_INCREMENT PRIMARY KEY,
       score INT NOT NULL,
       student_id INT NOT NULL,
-      FOREIGN KEY (student_id) REFERENCES student(id),
+      FOREIGN KEY (student_id) REFERENCES student(id) ON CASCADE DELETE,
       assessment_id INT NOT NULL,
-      FOREIGN KEY (assessment_id) REFERENCES assessment(id),
+      FOREIGN KEY (assessment_id) REFERENCES assessment(id) ON CASCADE DELETE,
       date DATE NOT NULL
    );
    
